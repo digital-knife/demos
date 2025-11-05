@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "status-page.fullname" . }}
+  labels:
+    {{- include "status-page.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "status-page.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "status-page.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - python
+            - -c
+            - |
+              import http.server, socketserver, urllib.request, json, os
+              from urllib.error import HTTPError, URLError
+
+              PORT = {{ .Values.app.port }}
+              TARGETS = {{ .Values.app.targets | toJson }}
+
+              class Handler(http.server.BaseHTTPRequestHandler):
+                  def do_GET(self):
+                      if self.path == '/health':
+                          self.send_response(200)
+                          self.end_headers()
+                          self.wfile.write(b"OK")
+                          return
+
+                      if self.path == '/':
+                          results = {}
+                          for t in TARGETS:
+                              try:
+                                  resp = urllib.request.urlopen(t['url'], timeout=3)
+                                  status = resp.status
+                              except Exception as e:
+                                  status = str(e)
+                              results[t['name']] = {
+                                  "url": t['url'],
+                                  "status": status,
+                                  "expected": t['expectedStatus'],
+                                  "ok": status == t['expectedStatus']
+                              }
+                          self.send_response(200)
+                          self.send_header('Content-type', 'application/json')
+                          self.end_headers()
+                          self.wfile.write(json.dumps(results, indent=2).encode())
+                          return
+
+                      self.send_response(404)
+                      self.end_headers()
+
+              with socketserver.TCPServer(("", PORT), Handler) as httpd:
+                  print(f"Status page running on :{PORT}")
+                  httpd.serve_forever()
+
+          ports:
+            - containerPort: {{ .Values.app.port }}
+          livenessProbe:
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
