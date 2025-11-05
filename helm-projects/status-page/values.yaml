@@ -1,0 +1,74 @@
+replicaCount: 1
+
+image:
+  repository: python
+  tag: "3.11-slim"
+  pullPolicy: IfNotPresent
+
+app:
+  port: 5000
+  healthCheckPath: /health
+  command: ["python3"]
+  args:
+    - "-c"
+    - |
+      import http.server
+      import socketserver
+      import json
+      PORT = 5000
+      HEALTH_PATH = '/health'
+      class HealthHandler(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+          if self.path == HEALTH_PATH:
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({'status': 'ok'}).encode())
+          elif self.path == '/':
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({'status': 'healthy', 'version': '1.0', 'deployed_via': 'Helm on Minikube', 'targets': [{'name': 'jenkins', 'url': 'http://jenkins:8080', 'expectedStatus': 200}, {'name': 'website', 'url': 'http://http-echo:5678', 'expectedStatus': 200}]}).encode())
+          else:
+            self.send_response(404)
+            self.end_headers()
+      httpd = socketserver.TCPServer(("", PORT), HealthHandler)
+      print(f'Status Server on port {PORT}')
+      httpd.serve_forever()
+  targets:
+    - name: jenkins
+      url: http://jenkins:8080
+      expectedStatus: 200
+    - name: website
+      url: http://http-echo:5678
+      expectedStatus: 200
+
+serviceAccount:
+  create: false
+
+service:
+  type: ClusterIP
+  port: 80
+  nodePort: 30080
+
+resources:
+  limits:
+    cpu: "200m"
+    memory: "256Mi"
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 5000
+  initialDelaySeconds: 10
+  periodSeconds: 10
+
+readinessProbe:
+  httpGet:
+    path: /health
+    port: 5000
+  initialDelaySeconds: 5
+  periodSeconds: 5
