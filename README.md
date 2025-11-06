@@ -10,3 +10,4 @@ Collection of SRE/DevOps demos.
 git clone https://github.com/digital-knife/demos.git -b minikube-helm-main
 cd demos/helm-projects && ./get_helm.sh
 Test webhook trigger on branch
+Test webhook on jenkins-integration
