@@ -22,3 +22,4 @@ Test repo registration
 Test webhook final push
 Test webhook port
 Test webhook port
+Test PR webhook merge
