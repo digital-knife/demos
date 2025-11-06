@@ -15,8 +15,17 @@ app:
       import http.server
       import socketserver
       import json
+      import urllib.request
+      import time
+      from collections import defaultdict
       PORT = 5000
       HEALTH_PATH = '/health'
+      TARGETS = [
+        {'name': 'jenkins', 'url': 'http://jenkins:8080'},
+        {'name': 'website', 'url': 'http://http-echo:5678'}
+      ]
+      scrape_counter = defaultdict(int)
+      scrape_time = defaultdict(float)
       class HealthHandler(http.server.BaseHTTPRequestHandler):
         def do_GET(self):
           if self.path == HEALTH_PATH:
@@ -25,10 +34,47 @@ app:
             self.end_headers()
             self.wfile.write(json.dumps({'status': 'ok'}).encode())
           elif self.path == '/':
+            status_data = {}
+            for target in TARGETS:
+              start = time.time()
+              try:
+                req = urllib.request.Request(target['url'])
+                with urllib.request.urlopen(req, timeout=5) as response:
+                  elapsed = time.time() - start
+                  scrape_counter[target['name']] += 1
+                  scrape_time[target['name']] = elapsed
+                  status_data[target['name']] = {
+                    'url': target['url'],
+                    'status': response.status,
+                    'expected': 200,
+                    'ok': response.status == 200
+                  }
+              except Exception as e:
+                elapsed = time.time() - start
+                scrape_time[target['name']] = elapsed
+                status_data[target['name']] = {
+                  'url': target['url'],
+                  'status': str(e),
+                  'expected': 200,
+                  'ok': False
+                }
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
             self.end_headers()
-            self.wfile.write(json.dumps({'status': 'healthy', 'version': '1.0', 'deployed_via': 'Helm on Minikube', 'targets': [{'name': 'jenkins', 'url': 'http://jenkins:8080', 'expectedStatus': 200}, {'name': 'website', 'url': 'http://http-echo:5678', 'expectedStatus': 200}]}).encode())
+            self.wfile.write(json.dumps(status_data).encode())
+          elif self.path == '/metrics':
+            self.send_response(200)
+            self.send_header('Content-type', 'text/plain; version=0.0.4')
+            self.end_headers()
+            self.wfile.write(b'# HELP status_scrape_count Number of scrapes for each target\\n')
+            self.wfile.write(b'# TYPE status_scrape_count counter\\n')
+            for name, count in scrape_counter.items():
+              self.wfile.write(f'status_scrape_count{{target="{name}"}} {count}\\n'.encode())
+            self.wfile.write(b'# HELP status_scrape_duration_seconds Duration of last scrape\\n')
+            self.wfile.write(b'# TYPE status_scrape_duration_seconds gauge\\n')
+            for name, duration in scrape_time.items():
+              self.wfile.write(f'status_scrape_duration_seconds{{target="{name}"}} {duration}\\n'.encode())
+            self.wfile.write(b'prometheus_scrape_success 1\\n')
           else:
             self.send_response(404)
             self.end_headers()
@@ -47,7 +93,7 @@ serviceAccount:
   create: false
 
 service:
-  type: ClusterIP
+  type: NodePort
   port: 80
   nodePort: 30080
 
