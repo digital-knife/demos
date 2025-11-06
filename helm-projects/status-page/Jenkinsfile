@@ -1,0 +1,61 @@
+pipeline {
+  agent any
+  environment {
+    PATH = "$WORKSPACE/bin:$PATH"
+  }
+  stages {
+    stage('Install Tools') {
+      steps {
+        sh '''
+          mkdir -p bin
+          curl -LO https://get.helm.sh/helm-v3.14.0-linux-amd64.tar.gz
+          tar -zxvf helm-v3.14.0-linux-amd64.tar.gz
+          mv linux-amd64/helm bin/
+          chmod +x bin/helm
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          mv kubectl bin/
+          kubectl version --client
+          helm version
+        '''
+      }
+    }
+    stage('Clone Repo') {
+      steps {
+        sh '''
+          git clone https://github.com/digital-knife/demos.git
+        '''
+      }
+    }
+    stage('Lint Helm Chart') {
+      steps {
+        dir('demos/helm-projects/status-page') {
+          sh 'helm lint .'
+        }
+      }
+    }
+    stage('Test Deploy') {
+      steps {
+        dir('demos/helm-projects/status-page') {
+          sh 'helm template . --debug'
+        }
+      }
+    }
+    stage('Deploy to Minikube') {
+      when { branch 'main' }
+      steps {
+        dir('demos/helm-projects/status-page') {
+          sh 'helm upgrade --install status-page . --set service.type=NodePort'
+        }
+      }
+    }
+  }
+  post {
+    always {
+      sh 'kubectl get pods -l app.kubernetes.io/name=status-page -n default'
+    }
+    failure {
+      sh 'echo "Pipeline failed—check Prometheus alerts"'
+    }
+  }
+}

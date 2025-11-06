@@ -6,6 +6,11 @@ prometheus:
           - targets: ['status-page.default.svc.cluster.local:80']
         metrics_path: /metrics
         scrape_interval: 30s
+      - job_name: jenkins
+        static_configs:
+          - targets: ['jenkins.jenkins.svc.cluster.local:8080']
+        metrics_path: /metrics
+        scrape_interval: 30s
 grafana:
   enabled: true
   adminPassword: admin
