@@ -14,3 +14,4 @@ Test webhook on jenkins-integration
 Test webhook
 Test webhook trigger
 Test webhook with Minikube IP
+Test webhook merge
