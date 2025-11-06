@@ -12,3 +12,4 @@ cd demos/helm-projects && ./get_helm.sh
 Test webhook trigger on branch
 Test webhook on jenkins-integration
 Test webhook
+Test webhook trigger
