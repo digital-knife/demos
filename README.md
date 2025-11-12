@@ -5,7 +5,7 @@ Production-grade SRE/DevOps infrastructure and automation demos.
 ## 📚 Projects
 
 ### **AWS Infrastructure (Terraform/Terragrunt)**
-3-tier VPC architecture with multi-environment management, remote state backend (S3+DynamoDB), and Jenkins CI/CD pipeline.
+3-tier VPC architecture with multi-environment management, remote state backend (S3+DynamoDB), and Jenkins automation.
 
 **Stack**: Terraform 1.9.5 | Terragrunt 0.93.4 | Jenkins on Kubernetes | AWS
 
@@ -36,7 +36,7 @@ cd ../dev
 terragrunt init && terragrunt apply
 ```
 
-**OR** use Jenkins pipeline with parameter-driven deployment (region, VPC CIDR, instance types).
+**OR** use Jenkins automation workflow with parameter-driven deployment (region, VPC CIDR, instance types).
 
 ### Kubernetes Status Page
 ```bash
@@ -93,7 +93,7 @@ demos/
 │   ├── dev/                     # Dev environment
 │   ├── prod/                    # Prod environment
 │   ├── *.tf                     # Infrastructure modules
-│   ├── Jenkinsfile              # CI/CD pipeline
+│   ├── Jenkinsfile              # Automation workflow
 │   └── root.hcl                 # Terragrunt config
 ├── helm-projects/               # Kubernetes apps
 │   ├── status-page/             # Helm chart
@@ -105,9 +105,11 @@ demos/
 
 ---
 
-## 🔄 CI/CD Pipelines
+## 🤖 Automation Workflows
 
-### Terraform/Terragrunt (Jenkins)
+### Terraform Infrastructure Deployment (Jenkins)
+Parameterized Jenkins job for AWS infrastructure provisioning with Terragrunt.
+
 **Flow**: Validate → Init → Plan → Approval → Apply → Validate → Archive
 
 **Features:**
@@ -117,8 +119,10 @@ demos/
 - Auto-cleanup on failure
 - State artifact archiving
 
-### Helm (Jenkins)
-**Flow**: Lint → Test → Deploy (on main push)
+### Application CI/CD Pipeline (Jenkins)
+Automated Helm deployment triggered by Git push to main branch.
+
+**Flow**: Lint → Test → Deploy
 
 **Trigger**: GitHub webhook (ngrok for local testing)
 
@@ -165,24 +169,6 @@ demos/
 
 - **Infrastructure**: Terraform plan validation, CIDR validation, post-deploy checks
 - **Application**: Helm linting, template validation, health endpoint tests
-
----
-
-## 📖 Useful Commands
-```bash
-# Terragrunt
-terragrunt plan
-terragrunt apply
-terragrunt output -json
-
-# Kubernetes
-kubectl get pods -A
-kubectl port-forward -n monitoring svc/prometheus-stack-grafana 3000:80
-
-# Helm
-helm list
-helm upgrade <release> <chart>
-```
 
 ---
 
