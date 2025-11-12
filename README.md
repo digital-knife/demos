@@ -1,7 +1,3 @@
-# Demos Repository
-
-Production-grade SRE/DevOps infrastructure and automation demos.
-
 ## 📚 Projects
 
 ### **AWS Infrastructure (Terraform/Terragrunt)**
@@ -121,9 +117,7 @@ Parameterized Jenkins job for AWS infrastructure provisioning with Terragrunt.
 
 ### Application CI/CD Pipeline (Jenkins)
 Automated Helm deployment triggered by Git push to main branch.
-
 **Flow**: Lint → Test → Deploy
-
 **Trigger**: GitHub webhook (ngrok for local testing)
 
 ---
@@ -138,18 +132,6 @@ Automated Helm deployment triggered by Git push to main branch.
 | **CI/CD** | Jenkins (K8s agents), GitHub webhooks |
 | **Monitoring** | Prometheus, Grafana, CloudWatch |
 | **Config Mgmt** | Ansible, Python |
-
----
-
-## 🔒 Security Highlights
-
-✅ No hardcoded credentials (Jenkins credential store)  
-✅ IAM least-privilege policies  
-✅ Security group tier isolation  
-✅ Encrypted S3 (AES256)  
-✅ State locking (prevents concurrent modifications)  
-✅ SSM Session Manager (SSH-less EC2 access)  
-✅ Git security (.gitignore, no state files committed)  
 
 ---
 
@@ -171,13 +153,6 @@ Automated Helm deployment triggered by Git push to main branch.
 - **Application**: Helm linting, template validation, health endpoint tests
 
 ---
-
-## 📝 License
-
-MIT License
-
 ## 👤 Author
 
 **digital-knife** - [@digital-knife](https://github.com/digital-knife)
-
-Demonstrating production-grade DevOps/SRE practices.
