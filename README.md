@@ -1,41 +1,197 @@
-# Demos Repo
-Collection of SRE/DevOps demos.
+# Demos Repository
 
-## Demos
-- [Helm Projects](./helm-projects): K8s status-page with Helm, Prometheus monitoring, Grafana dashboard, and Jenkins CI/CD pipeline.
-- [Healthcheck App](./healthcheck-app): Python API + Ansible deployment.
-- [Postman Tests](./postman-tests): API testing collections.
+Production-grade SRE/DevOps infrastructure and automation demos.
 
-## Run a Demo
+## 📚 Projects
+
+### **AWS Infrastructure (Terraform/Terragrunt)**
+3-tier VPC architecture with multi-environment management, remote state backend (S3+DynamoDB), and Jenkins CI/CD pipeline.
+
+**Stack**: Terraform 1.9.5 | Terragrunt 0.93.4 | Jenkins on Kubernetes | AWS
+
+### **Kubernetes (Helm)**
+Status page application with Prometheus monitoring, Grafana dashboards, and automated CI/CD.
+
+**Stack**: Kubernetes | Helm 3.x | Prometheus | Grafana
+
+### **Other Demos**
+- **Healthcheck App**: Python API with Ansible deployment
+- **Postman Tests**: API testing collections
+
+---
+
+## 🚀 Quick Start
+
+### AWS Infrastructure
+```bash
+git clone https://github.com/digital-knife/demos.git
+cd demos/cloud-projects
+
+# Bootstrap state backend (one-time)
+cd terraform-state-backend
+terraform init && terraform apply
+
+# Deploy via Terragrunt
+cd ../dev
+terragrunt init && terragrunt apply
+```
+
+**OR** use Jenkins pipeline with parameter-driven deployment (region, VPC CIDR, instance types).
+
+### Kubernetes Status Page
+```bash
 git clone https://github.com/digital-knife/demos.git -b jenkins-integration
-cd demos/helm-projects && ./get_helm.sh
+cd demos/helm-projects
 
-### Helm Status-Page Setup
-1. Install Helm: `./get_helm.sh`.
-2. Start Minikube: `minikube start --driver=docker`.
-3. Deploy: `helm install status-page ./status-page --set service.type=NodePort`.
-4. Access: `minikube service status-page --url` → curl / for JSON health.
-5. Toggle internal: `helm upgrade status-page ./status-page --set service.type=ClusterIP`.
+# Setup
+./get_helm.sh
+minikube start --driver=docker
 
-### Prometheus Monitoring
-helm install prometheus-stack prometheus-community/kube-prometheus-stack -f prometheus-custom-values.yaml --namespace monitoring --create-namespace
-kubectl port-forward -n monitoring svc/prometheus-stack-kube-prom-prometheus 9090:9090
-Query: up{job="status-page"} in UI for app health.
+# Deploy
+helm install status-page ./status-page --set service.type=NodePort
+minikube service status-page --url
 
-### Grafana Dashboard
+# Monitoring
+helm install prometheus-stack prometheus-community/kube-prometheus-stack \
+  -f prometheus-custom-values.yaml --namespace monitoring --create-namespace
+
 kubectl port-forward -n monitoring svc/prometheus-stack-grafana 3000:80
-Login: admin / [your password] | Import grafana-status-dashboard.json for uptime/scrape graphs.
+# Login: admin / [password from secret]
+# Import: grafana-status-dashboard.json
+```
 
-### Jenkins CI/CD
-Pipeline: Lint Helm, test template, deploy on main push.
-Trigger: GitHub webhook (ngrok tunnel for local).
-Test: Push to main → Auto-build → Deploy status-page.
+---
 
-### Challenges
-- Metrics "no data": Narrowed time range to 5m; triggered synthetic loads.
-- Pipeline "command not found": Bootstrapped tools in stage for ephemeral agents.
-- Webhook "received but no trigger": Registered repo in global config; enabled hook trigger.
+## 🏗️ Architecture
 
-## Run a Demo
-git clone https://github.com/digital-knife/demos.git -b jenkins-integration
-cd demos/helm-projects && ./get_helm.sh
+### AWS Infrastructure (3-Tier)
+```
+Internet → IGW → Public Subnet (Bastion + NAT)
+                      ↓
+             Private Subnets (Web + App Tiers)
+```
+
+**Components:**
+- VPC with isolated dev (10.0.0.0/16) and prod (10.1.0.0/16) environments
+- 3 EC2 instances (bastion, web, app) with tier-based security groups
+- S3 bucket with encryption, versioning, lifecycle policies (30d→IA, 90d→Glacier)
+- IAM roles with least-privilege access
+- Remote state: S3 + DynamoDB locking
+
+**Security:**
+- Bastion: SSH from allowed CIDR only
+- Web: HTTP/HTTPS + SSH from bastion
+- App: Port 8080 from web tier + SSH from bastion
+
+---
+
+## 📁 Project Structure
+```
+demos/
+├── cloud-projects/              # Terraform/Terragrunt
+│   ├── terraform-state-backend/ # S3 + DynamoDB bootstrap
+│   ├── dev/                     # Dev environment
+│   ├── prod/                    # Prod environment
+│   ├── *.tf                     # Infrastructure modules
+│   ├── Jenkinsfile              # CI/CD pipeline
+│   └── root.hcl                 # Terragrunt config
+├── helm-projects/               # Kubernetes apps
+│   ├── status-page/             # Helm chart
+│   ├── prometheus-custom-values.yaml
+│   └── grafana-status-dashboard.json
+├── healthcheck-app/             # Python API
+└── postman-tests/               # API tests
+```
+
+---
+
+## 🔄 CI/CD Pipelines
+
+### Terraform/Terragrunt (Jenkins)
+**Flow**: Validate → Init → Plan → Approval → Apply → Validate → Archive
+
+**Features:**
+- Parameter-driven (region, CIDR, instance types)
+- Environment-locked CIDR validation
+- Manual approval gates
+- Auto-cleanup on failure
+- State artifact archiving
+
+### Helm (Jenkins)
+**Flow**: Lint → Test → Deploy (on main push)
+
+**Trigger**: GitHub webhook (ngrok for local testing)
+
+---
+
+## 🛠️ Key Technologies
+
+| Category | Tools |
+|----------|-------|
+| **IaC** | Terraform, Terragrunt |
+| **Cloud** | AWS (VPC, EC2, S3, IAM, DynamoDB) |
+| **Containers** | Kubernetes, Helm, Docker |
+| **CI/CD** | Jenkins (K8s agents), GitHub webhooks |
+| **Monitoring** | Prometheus, Grafana, CloudWatch |
+| **Config Mgmt** | Ansible, Python |
+
+---
+
+## 🔒 Security Highlights
+
+✅ No hardcoded credentials (Jenkins credential store)
+✅ IAM least-privilege policies
+✅ Security group tier isolation
+✅ Encrypted S3 (AES256)
+✅ State locking (prevents concurrent modifications)
+✅ SSM Session Manager (SSH-less EC2 access)
+✅ Git security (.gitignore, no state files committed)
+
+---
+
+## 📋 Prerequisites
+
+**AWS Infrastructure:**
+- AWS account with appropriate permissions
+- Jenkins with Kubernetes plugin + AWS credentials
+
+**Kubernetes:**
+- Docker + Minikube (or K8s cluster)
+- kubectl + Helm 3.x
+
+---
+
+## 🧪 Testing
+
+- **Infrastructure**: Terraform plan validation, CIDR validation, post-deploy checks
+- **Application**: Helm linting, template validation, health endpoint tests
+
+---
+
+## 📖 Useful Commands
+```bash
+# Terragrunt
+terragrunt plan
+terragrunt apply
+terragrunt output -json
+
+# Kubernetes
+kubectl get pods -A
+kubectl port-forward -n monitoring svc/prometheus-stack-grafana 3000:80
+
+# Helm
+helm list
+helm upgrade <release> <chart>
+```
+
+---
+
+## 📝 License
+
+MIT License
+
+## 👤 Author
+
+**digital-knife** - [@digital-knife](https://github.com/digital-knife)
+
+Demonstrating production-grade DevOps/SRE practices.
