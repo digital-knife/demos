@@ -1,0 +1,72 @@
+---
+- name: Deploy FastAPI app with Docker
+  hosts: localhost
+  become: true
+  vars:
+    app_name: sre-lab-demo
+    image_tag: latest
+    app_dir: /home/dklol/dev/sre-lab-demo
+
+  tasks:
+    - name: Check if Docker is installed
+      ansible.builtin.command: docker --version
+      register: docker_check
+      ignore_errors: true
+
+    - name: Install Docker if missing
+      when: docker_check.rc != 0
+      block:
+        - name: Install dependencies
+          ansible.builtin.apt:
+            name:
+              - ca-certificates
+              - curl
+              - gnupg
+            state: present
+            update_cache: true
+
+        - name: Add Docker repository
+          ansible.builtin.apt_repository:
+            repo: >
+              deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc]
+              https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable
+            state: present
+
+        - name: Install Docker CE
+          ansible.builtin.apt:
+            name:
+              - docker-ce
+              - docker-ce-cli
+              - containerd.io
+              - docker-buildx-plugin
+              - docker-compose-plugin
+            state: present
+            update_cache: true
+
+    - name: Ensure Docker service is running
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Build Docker image
+      ansible.builtin.command:
+        cmd: >
+          docker build
+          --build-arg IMAGE_TAG={{ image_tag }}
+          --build-arg BUILD_TIME="{{ lookup('pipe', 'date -u +%Y-%m-%dT%H:%M:%SZ') }}"
+          -t {{ app_name }}:{{ image_tag }} .
+        chdir: "{{ playbook_dir }}/.."
+
+    - name: Stop existing container if any
+      ansible.builtin.command:
+        cmd: docker rm -f {{ app_name }}
+      ignore_errors: true
+
+    - name: Run container
+      ansible.builtin.command:
+        cmd: >
+          docker run -d
+          --name {{ app_name }}
+          -p 8000:8000
+          {{ app_name }}:{{ image_tag }}
