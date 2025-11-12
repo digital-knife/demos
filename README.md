@@ -143,13 +143,13 @@ Automated Helm deployment triggered by Git push to main branch.
 
 ## 🔒 Security Highlights
 
-✅ No hardcoded credentials (Jenkins credential store)
-✅ IAM least-privilege policies
-✅ Security group tier isolation
-✅ Encrypted S3 (AES256)
-✅ State locking (prevents concurrent modifications)
-✅ SSM Session Manager (SSH-less EC2 access)
-✅ Git security (.gitignore, no state files committed)
+✅ No hardcoded credentials (Jenkins credential store)  
+✅ IAM least-privilege policies  
+✅ Security group tier isolation  
+✅ Encrypted S3 (AES256)  
+✅ State locking (prevents concurrent modifications)  
+✅ SSM Session Manager (SSH-less EC2 access)  
+✅ Git security (.gitignore, no state files committed)  
 
 ---
 
