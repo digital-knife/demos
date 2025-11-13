@@ -28,8 +28,8 @@ Helm-deployed application with Prometheus monitoring, Grafana dashboards, and au
 
 ---
 
-### [Healthcheck API](https://github.com/digital-knife/healthcheck-app) *(Coming Soon)*
-Python REST API with Ansible-based deployment automation.
+### [Healthcheck API](https://github.com/digital-knife/healthcheck-app)
+Python REST API with health check endpoints and Ansible-based deployment automation.
 
 **Stack**: Python | Ansible | Flask
 
